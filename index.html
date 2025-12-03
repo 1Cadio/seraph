@@ -20,8 +20,103 @@
         <meta property="og:title" content="seraph">
         <meta property="og:type" content="website">
         <meta property="og:description" content="an open source games site hosting 500+ games, useful utilities, powerful settings + a clean user interface">
+        
+        <!-- NEW STYLE: Passcode Gate Styling -->
+        <style>
+            #passcode-gate {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: #1e1e1e; /* Dark background */
+                color: #fff;
+                display: none; /* Controlled by JS */
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            #passcode-display {
+                font-size: 2.5em;
+                margin-bottom: 20px;
+                letter-spacing: 10px;
+                min-height: 1.2em;
+                border: 2px solid #555;
+                padding: 10px;
+                width: 150px;
+                text-align: center;
+                background: #333;
+                border-radius: 5px;
+            }
+
+            #keypad {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+                width: 250px;
+            }
+
+            .keypad-button {
+                padding: 20px;
+                font-size: 1.5em;
+                cursor: pointer;
+                background: #444;
+                color: #fff;
+                border: none;
+                border-radius: 8px;
+                transition: background 0.1s;
+                user-select: none;
+            }
+
+            .keypad-button:hover {
+                background: #666;
+            }
+
+            .keypad-button:active {
+                background: #888;
+            }
+
+            #error-message {
+                color: #ff4d4d;
+                margin-top: 10px;
+                min-height: 1.2em;
+                font-weight: bold;
+            }
+
+            /* Hides the main content by default until JS/Passcode is successful */
+            #main-content {
+                display: none;
+            }
+        </style>
   </head>
   <body>
+    <!-- NEW: Passcode Gate HTML -->
+    <div id="passcode-gate">
+        <h2>Enter Passcode (6741)</h2>
+        <div id="passcode-display"></div>
+        <div id="error-message"></div>
+        <div id="keypad">
+            <button class="keypad-button" data-key="1">1</button>
+            <button class="keypad-button" data-key="2">2</button>
+            <button class="keypad-button" data-key="3">3</button>
+            <button class="keypad-button" data-key="4">4</button>
+            <button class="keypad-button" data-key="5">5</button>
+            <button class="keypad-button" data-key="6">6</button>
+            <button class="keypad-button" data-key="7">7</button>
+            <button class="keypad-button" data-key="8">8</button>
+            <button class="keypad-button" data-key="9">9</button>
+            <button class="keypad-button" data-key="clear">CLR</button>
+            <button class="keypad-button" data-key="0">0</button>
+            <button class="keypad-button" data-key="enter">✓</button>
+        </div>
+    </div>
+    <!-- END NEW: Passcode Gate HTML -->
+
+    <!-- NEW: Wrap all existing body content inside #main-content -->
+    <div id="main-content">
     
      <div id="blackout"></div>
      <div id="updPopup">
@@ -277,5 +372,78 @@
       <script src="storage/js/cloak.js"></script>
       <script src="storage/js/theme.js"></script>
       <script src="storage/js/cookie.js"></script>
+
+    <!-- NEW SCRIPT: Passcode Logic -->
+    <script>
+        const CORRECT_PASSCODE = '6741';
+        const PASSCODE_STORAGE_KEY = 'passcode_entered';
+
+        const passcodeGate = document.getElementById('passcode-gate');
+        const mainContent = document.getElementById('main-content');
+        const display = document.getElementById('passcode-display');
+        const errorMessage = document.getElementById('error-message');
+        const keypad = document.getElementById('keypad');
+
+        let enteredCode = '';
+
+        function checkAccess() {
+            // Check if the passcode has been successfully entered before
+            if (localStorage.getItem(PASSCODE_STORAGE_KEY) === 'true') {
+                passcodeGate.style.display = 'none';
+                mainContent.style.display = 'block';
+            } else {
+                passcodeGate.style.display = 'flex'; // Show the gate
+                mainContent.style.display = 'none'; // Hide the site content
+                updateDisplay(); // Initialize display
+            }
+        }
+
+        function updateDisplay() {
+            // Show 4 dots/stars to represent the entered code length
+            display.textContent = '*'.repeat(enteredCode.length);
+            errorMessage.textContent = ''; // Clear error on new input
+        }
+
+        function handleKey(key) {
+            if (key >= '0' && key <= '9' && enteredCode.length < 4) {
+                enteredCode += key;
+            } else if (key === 'clear') {
+                enteredCode = '';
+            } else if (key === 'enter') {
+                validateCode();
+                return;
+            }
+            updateDisplay();
+            
+            // Auto-validate if 4 digits are entered
+            if (enteredCode.length === 4) {
+                setTimeout(validateCode, 200);
+            }
+        }
+
+        function validateCode() {
+            if (enteredCode === CORRECT_PASSCODE) {
+                localStorage.setItem(PASSCODE_STORAGE_KEY, 'true'); // Set the flag
+                checkAccess(); // Grant access
+            } else {
+                errorMessage.textContent = 'Incorrect Passcode';
+                enteredCode = ''; // Clear input on failure
+                updateDisplay();
+            }
+        }
+
+        // Add click listener to the keypad container
+        keypad.addEventListener('click', (event) => {
+            if (event.target.classList.contains('keypad-button')) {
+                const key = event.target.dataset.key;
+                handleKey(key);
+            }
+        });
+
+        // Initial check on page load
+        document.addEventListener('DOMContentLoaded', checkAccess);
+    </script>
+    <!-- END NEW SCRIPT: Passcode Logic -->
+    </div> <!-- Close #main-content wrapper -->
   </body>
 </html>
